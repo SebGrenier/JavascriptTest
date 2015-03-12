@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<script src= "http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+</head>
+
+<body data-ng-app="STLFavs" data-ng-controller="STLFavsController">
+
+	<h1>Welcome to STL Favs!</h1>
+
+	<div>
+		Select an agency : 
+		<span class="nullable">
+			<select data-ng-model="CurrentAgency" data-ng-options="Agency.agency_id for Agency in Agencies" data-ng-change="OnAgencySelect()">
+				<option value="">Please select an agency</option>
+			</select>
+		</span>
+	</div>
+	<div data-ng-show="ShowAgencyInfo">
+		Select a route :
+		<span class="nullable">
+			<select data-ng-model="CurrentRoute" data-ng-options="Route.route_long_name group by Route.route_short_name for Route in Routes" data-ng-change="OnRouteSelect()">
+				<option value="">Please select a route</option>
+			</select>
+		</span>
+	</div>
+
+	<div data-ng-show="ShowAgencyInfo">
+		<h2>Selected agency info</h2>
+		<table>
+			<tr data-ng-repeat="(key,value) in CurrentAgency">
+				<td>{{ key }}</td>
+				<td>{{ value }}</td>
+			</tr>
+		</table>
+	</div>
+	
+	<div data-ng-show="ShowRouteInfo">
+		<h2>Selected route info</h2>
+		<table>
+			<tr data-ng-repeat="(key,value) in CurrentRoute">
+				<td>{{ key }}</td>
+				<td>{{ value }}</td>
+			</tr>
+		</table>
+	</div>
+
+
+	<script src="src/App.js"></script>
+	<script src="src/Controller.js"></script>
+
+</body>
+</html>

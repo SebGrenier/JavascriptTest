@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<script src= "http://ajax.googleapis.com/ajax/libs/angularjs/1.2.26/angular.min.js"></script>
+</head>
+
+<body>
+
+<div data-ng-app="Checksum" data-ng-controller="ChecksumController">
+ 
+<p>Input a string to be converted to MD5 checksum:</p>
+<p>Input: <input type="text" data-ng-model="InputString" data-ng-change="InputChanged()"></p>
+<p>Checksum is :</p>
+<button data-ng-click="Decrease()">-</button>Font Size = {{Size}}<button data-ng-click="Increase()">+</button>
+<br>
+Red = {{Red}} <input type="range" min="0" max="255" value="Red" step="1" data-ng-model="Red" data-ng-change="ChangeColor()" />
+<br>
+Green = {{Green}} <input type="range" min="0" max="255" value="Green" step="1" data-ng-model="Green" data-ng-change="ChangeColor()" />
+<br>
+Blue = {{Blue}} <input type="range" min="0" max="255" value="Blue" step="1" data-ng-model="Blue" data-ng-change="ChangeColor()" />
+<p data-ng-style="MyStyle">{{Hash}}</p>
+
+</div>
+
+<script src="src/App.js"></script>
+<script src="src/Controller.js"></script>
+
+</body>
+</html>
