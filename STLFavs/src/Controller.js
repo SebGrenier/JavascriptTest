@@ -34,7 +34,7 @@ app.controller( "STLFavsController", function( $scope, $http )
 		{
 			if( Element.hasOwnProperty( "route_id" ) )
 			{
-				console.log( "route_id value is : " + Element.route_id );
+				//console.log( "route_id value is : " + Element.route_id );
 				return Element.route_id.startsWith( "JANV15" );
 			}
 			else
@@ -45,6 +45,45 @@ app.controller( "STLFavsController", function( $scope, $http )
 		});
 		
 		$scope.Routes = TempRoutes.filter( IsJan15 );
+		$scope.Routes.sort( function( ElemA, ElemB )
+		{
+		    if( ElemA.hasOwnProperty( "route_short_name" ) && ElemB.hasOwnProperty( "route_short_name" ) )
+		    {
+		        // Test for short names, then long names
+
+		        // Short names should be integer
+		        ElemAShort = Number( ElemA.route_short_name );
+		        ElemBShort = Number( ElemB.route_short_name );
+
+		        if( ElemAShort < ElemBShort )
+		        {
+		            return -1;
+		        }
+		        else if( ElemAShort > ElemBShort )
+		        {
+		            return 1;
+		        }
+		        else
+		        {
+		            if( ElemA.hasOwnProperty( "route_long_name" ) && ElemB.hasOwnProperty( "route_long_name" ) )
+		            {
+		                if( ElemA.route_long_name < ElemB.route_long_name )
+		                {
+		                    return -1;
+		                }
+		                else if( ElemA.route_long_name > ElemB.route_long_name )
+		                {
+		                    return 1;
+		                }
+		                else
+		                {
+		                    return 0;
+		                }
+		            }
+		        }
+		    }
+		    return 0;
+		});
 	});
 	
 	// Function when selecting an agency
