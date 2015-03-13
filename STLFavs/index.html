@@ -25,6 +25,14 @@
 			</select>
 		</span>
 	</div>
+    <div data-ng-show="ShowRouteInfo">
+        Select a stop :
+        <span class="nullable">
+            <select data-ng-model="CurrentStop" data-ng-options="Stop.stop_name for Stop in CurrentStops" data-ng-change="OnStopSelect()">
+                <option value="">Please select a stop</option>
+            </select>
+        </span>
+    </div>
 
 	<div data-ng-show="ShowAgencyInfo">
 		<h2>Selected agency info</h2>
