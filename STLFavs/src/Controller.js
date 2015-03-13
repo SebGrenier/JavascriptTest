@@ -21,7 +21,9 @@ function FindPropertyInArray( TheArray, PropertyName, PropertyValue )
 
 app.controller( "STLFavsController", function( $scope, $http )
 {
-	// Initialize initial values
+    // Initialize initial values
+    $scope.Calendar = [];
+    $scope.CalendarDates = [];
 	$scope.Agencies = [];
 	$scope.CurrentAgency = null;
 	$scope.ShowAgencyInfo = false;
@@ -35,6 +37,22 @@ app.controller( "STLFavsController", function( $scope, $http )
 	$scope.CurrentStops = [];
 	$scope.CurrentStop = null;
 	$scope.ShowStopInfo = false;
+
+    // Read calendar JSON
+	$http.get( "data/calendar.json" )
+    .success( function( response )
+    {
+        $scope.Calendar = response;
+        console.log( "calendar.json loaded" );
+    } );
+
+    // Read calendar_dates JSON
+	$http.get( "data/calendar_dates.json" )
+    .success( function( response )
+    {
+        $scope.CalendarDates = response;
+        console.log( "calendar_dates.json loaded" );
+    } );
 	
 	// Read agency JSON
     $http.get( "data/agency.json" )
@@ -211,5 +229,24 @@ app.controller( "STLFavsController", function( $scope, $http )
 	$scope.OnStopSelect = function()
 	{
 	    $scope.ShowStopInfo = $scope.CurrentStop != null;
+
+	    if( $scope.ShowStopInfo )
+	    {
+	        // Find the schedule for this stop, 
+	        // taking into account the day of the week
+	        var StopID = $scope.CurrentStop.stop_id;
+
+	        // Get the stop times for current stop
+	        var FilterStopTimes = FilterJSONArray( function( Element ){
+	            if( Element.hasOwnProperty( "stop_id" ) )
+	            {
+	                return Element.stop_id === StopID;
+	            }
+	            return false;
+	        });
+	        var CurrentStopTimes = $scope.StopTimes.filter( FilterStopTimes );
+
+
+	    }
 	}
 });
