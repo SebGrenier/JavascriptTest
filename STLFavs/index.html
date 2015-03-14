@@ -20,7 +20,7 @@
 	<div data-ng-show="ShowAgencyInfo">
 		Select a route :
 		<span class="nullable">
-			<select data-ng-model="CurrentRoute" data-ng-options="Route.route_long_name group by Route.route_short_name for Route in Routes" data-ng-change="OnRouteSelect()">
+			<select data-ng-model="CurrentRoute" data-ng-options="Route.route_long_name group by Route.route_short_name for Route in ValidRoutes" data-ng-change="OnRouteSelect()">
 				<option value="">Please select a route</option>
 			</select>
 		</span>

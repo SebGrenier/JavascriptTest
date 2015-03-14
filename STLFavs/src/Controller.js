@@ -49,7 +49,8 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
     $scope.Agencies = [];
     $scope.CurrentAgency = null;
     $scope.ShowAgencyInfo = false;
-    $scope.Routes = [];
+    $scope.AllRoutes = [];
+    $scope.ValidRoutes = [];
     $scope.CurrentRoute = null;
     $scope.ShowRouteInfo = false;
     $scope.Trips = [];
@@ -60,6 +61,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
     $scope.CurrentStop = null;
     $scope.ShowStopInfo = false;
     $scope.ServiceID = "";
+    $scope.ServicePrefix = "";
 
     // Load both calendar JSONs
     GetCalendar = $http.get( "data/calendar.json", { cache: false } );
@@ -149,64 +151,10 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
     $http.get( "data/routes.json" )
 	.success( function( response )
 	{
-	    TempRoutes = response;
+	    $scope.AllRoutes = response;
 	    console.log( "routes.json loaded" );
 
-	    // Get only the routes that are for January 15
-	    var IsJan15 = FilterJSONArray( function( Element )
-	    {
-	        if( Element.hasOwnProperty( "route_id" ) )
-	        {
-	            //console.log( "route_id value is : " + Element.route_id );
-	            return Element.route_id.startsWith( "JANV15" );
-	        }
-	        else
-	        {
-	            console.log( "Object has no property route_id" );
-	            return false;
-	        }
-	    } );
-
-	    $scope.Routes = TempRoutes.filter( IsJan15 );
-	    $scope.Routes.sort( function( ElemA, ElemB )
-	    {
-	        if( ElemA.hasOwnProperty( "route_short_name" ) && ElemB.hasOwnProperty( "route_short_name" ) )
-	        {
-	            // Test for short names, then long names
-
-	            // Short names should be integer
-	            ElemAShort = Number( ElemA.route_short_name );
-	            ElemBShort = Number( ElemB.route_short_name );
-
-	            if( ElemAShort < ElemBShort )
-	            {
-	                return -1;
-	            }
-	            else if( ElemAShort > ElemBShort )
-	            {
-	                return 1;
-	            }
-	            else
-	            {
-	                if( ElemA.hasOwnProperty( "route_long_name" ) && ElemB.hasOwnProperty( "route_long_name" ) )
-	                {
-	                    if( ElemA.route_long_name < ElemB.route_long_name )
-	                    {
-	                        return -1;
-	                    }
-	                    else if( ElemA.route_long_name > ElemB.route_long_name )
-	                    {
-	                        return 1;
-	                    }
-	                    else
-	                    {
-	                        return 0;
-	                    }
-	                }
-	            }
-	        }
-	        return 0;
-	    } );
+	    
 	} );
 
     // Read trips JSON
@@ -239,6 +187,72 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
         if( $scope.CurrentAgency != null ||
 			$scope.CurrentAgency != undefined )
         {
+            // Select the valid routes only
+            // Filter agency
+            var FilterAgency = FilterJSONArray( function( Element )
+            {
+                if( Element.hasOwnProperty( "agency_id" ) )
+                {
+                    return Element.agency_id === $scope.CurrentAgency.agency_id;
+                }
+                return false;
+            } )
+            var TempValidRoutes = $scope.AllRoutes.filter( FilterAgency );
+
+            // Filter the route_id based on the service prefix
+            var FilterServicePrefix = FilterJSONArray( function( Element )
+            {
+                if( Element.hasOwnProperty( "route_id" ) )
+                {
+                    return Element.route_id.startsWith( $scope.ServicePrefix );
+                }
+                return false;
+            } );
+            $scope.ValidRoutes = TempValidRoutes.filter( FilterServicePrefix );
+
+            // Sort the valid routes
+            $scope.ValidRoutes.sort( function( ElemA, ElemB )
+            {
+                if( ElemA.hasOwnProperty( "route_short_name" ) && ElemB.hasOwnProperty( "route_short_name" ) )
+                {
+                    // Test for short names, then long names
+
+                    // Short names should be integer
+                    ElemAShort = Number( ElemA.route_short_name );
+                    ElemBShort = Number( ElemB.route_short_name );
+
+                    if( ElemAShort < ElemBShort )
+                    {
+                        return -1;
+                    }
+                    else if( ElemAShort > ElemBShort )
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+                        if( ElemA.hasOwnProperty( "route_long_name" ) && ElemB.hasOwnProperty( "route_long_name" ) )
+                        {
+                            if( ElemA.route_long_name < ElemB.route_long_name )
+                            {
+                                return -1;
+                            }
+                            else if( ElemA.route_long_name > ElemB.route_long_name )
+                            {
+                                return 1;
+                            }
+                            else
+                            {
+                                return 0;
+                            }
+                        }
+                    }
+                }
+                return 0;
+            } );
+
+            // Set show to true only at the end, when everything has been
+            // properly set
             $scope.ShowAgencyInfo = true;
         }
         else
@@ -247,6 +261,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
         }
     };
 
+    // Function when selecting a route
     $scope.OnRouteSelect = function()
     {
         if( $scope.CurrentRoute != null ||
@@ -309,6 +324,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
         }
     };
 
+    // Function when selecting a stop
     $scope.OnStopSelect = function()
     {
         $scope.ShowStopInfo = $scope.CurrentStop != null;
@@ -338,5 +354,14 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
     $scope.$watch( "ServiceID", function()
     {
         console.log( "Service ID is : " + $scope.ServiceID );
+
+        // Compute the new ServicePrefix
+        var PrefixRegex = /([a-zA-Z]+\d{2})/i;
+        var Match = PrefixRegex.exec( $scope.ServiceID );
+        if( Match != null )
+        {
+            $scope.ServicePrefix = Match[0];
+        }
+        console.log( "Service Prefix is : " + $scope.ServicePrefix );
     } )
 } );
