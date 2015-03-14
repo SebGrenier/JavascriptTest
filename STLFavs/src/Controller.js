@@ -1,3 +1,20 @@
+// Special Route class
+function Route( RouteJSON )
+{
+    var Props = Object.getOwnPropertyNames( RouteJSON );
+    Props.forEach( function( Value )
+    {
+        this[Value] = RouteJSON[Value];
+    }, this );
+}
+
+Object.defineProperty( Route.prototype, "route_complete_name", {
+    get: function()
+    {
+        return this.route_short_name + " " + this.route_long_name;
+    }
+} );
+
 function FilterJSONArray( CriteriaFn )
 {
     return function( Element, Index, Array )
@@ -151,10 +168,12 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
     $http.get( "data/routes.json" )
 	.success( function( response )
 	{
-	    $scope.AllRoutes = response;
+	    var Temp = response;
+	    $scope.AllRoutes = Temp.map( function( Item )
+	    {
+	        return new Route( Item );
+	    });
 	    console.log( "routes.json loaded" );
-
-	    
 	} );
 
     // Read trips JSON
