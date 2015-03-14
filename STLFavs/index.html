@@ -25,7 +25,7 @@
 			</select>
 		</span>
 	</div>
-    <div data-ng-show="ShowRouteInfo">
+    <div data-ng-show="ShowRouteInfo && ShowAgencyInfo">
         Select a stop :
         <span class="nullable">
             <select data-ng-model="CurrentStop" data-ng-options="Stop.stop_name for Stop in CurrentStops" data-ng-change="OnStopSelect()">
@@ -44,7 +44,7 @@
 		</table>
 	</div>
 	
-	<div data-ng-show="ShowRouteInfo">
+	<div data-ng-show="ShowRouteInfo && ShowAgencyInfo">
 		<h2>Selected route info</h2>
 		<table>
 			<tr data-ng-repeat="(key,value) in CurrentRoute">

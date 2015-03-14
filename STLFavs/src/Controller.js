@@ -19,7 +19,29 @@ function FindPropertyInArray( TheArray, PropertyName, PropertyValue )
     return undefined;
 }
 
-app.controller( "STLFavsController", function( $scope, $http )
+function FormatDate( TheDate )
+{
+    if( TheDate instanceof Date )
+    {
+        // The format is yyyymmdd
+        var YearStr = TheDate.getFullYear().toString();
+
+        // The month may be one digit, plus it is 0 based
+        var MonthStr = ( TheDate.getMonth() + 1 ).toString();
+        if( MonthStr.length < 2 )
+        {
+            MonthStr = "0" + MonthStr;
+        }
+
+        var DayStr = TheDate.getDate().toString();
+
+        return YearStr + MonthStr + DayStr;
+    }
+    
+    return "";
+}
+
+app.controller( "STLFavsController", function( $scope, $http, $q )
 {
     // Initialize initial values
     $scope.Calendar = [];
@@ -37,21 +59,82 @@ app.controller( "STLFavsController", function( $scope, $http )
     $scope.CurrentStops = [];
     $scope.CurrentStop = null;
     $scope.ShowStopInfo = false;
+    $scope.ServiceID = "";
 
-    // Read calendar JSON
-    $http.get( "data/calendar.json" )
-    .success( function( response )
-    {
-        $scope.Calendar = response;
-        console.log( "calendar.json loaded" );
-    } );
+    // Load both calendar JSONs
+    GetCalendar = $http.get( "data/calendar.json", { cache: false } );
+    GetCalendarDates = $http.get( "data/calendar_dates.json", { cache: false } );
 
-    // Read calendar_dates JSON
-    $http.get( "data/calendar_dates.json" )
-    .success( function( response )
+    $q.all( [GetCalendar, GetCalendarDates] ).then( function( values )
     {
-        $scope.CalendarDates = response;
-        console.log( "calendar_dates.json loaded" );
+        // Get the data of the values returned
+        $scope.Calendar = values[0].data;
+        $scope.CalendarDates = values[1].data;
+        console.log( "Loaded both calendar JSONs" );
+
+        // Get the current date
+        var CurrentDate = new Date();
+        var DateStr = FormatDate( CurrentDate );
+
+        // Check the exception dates first
+        var FilterExceptionDates = FilterJSONArray( function( Element )
+        {
+            if( Element.hasOwnProperty( "date" ) )
+            {
+                return Element.date === DateStr;
+            }
+            return false;
+        } );
+
+        var ExceptionDates = $scope.CalendarDates.filter( FilterExceptionDates );
+
+        // If there is at least one (can there be more that one?), use this service id instead
+        if( ExceptionDates.length > 0 )
+        {
+            $scope.ServiceID = ExceptionDates[0].service_id;
+
+            // We should also check for the type of exception, i.e.
+            // if this is a day WITHOUT service.
+        }
+        else
+        {
+            // We have to check inside the calendar for a service that match
+            // our current date
+            var FilterDates = FilterJSONArray( function( Element )
+            {
+                if( Element.hasOwnProperty( "start_date" ) &&
+                    Element.hasOwnProperty( "end_date" ) )
+                {
+                    return DateStr >= Element.start_date && DateStr <= Element.end_date;
+                }
+                return false;
+            } );
+
+            var PossibleDates = $scope.Calendar.filter( FilterDates );
+            if( PossibleDates.length <= 0 )
+            {
+                console.log( "No suitable date found in the calendar" );
+                return;
+            }
+
+            // Find the correct service, i.e. week service or weekend
+            var DayStrArray = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+            var TheDates = PossibleDates.filter( function( Element )
+            {
+                // Lets assume that the element is indeed a date from the calendar
+                var CurrentDayInt = CurrentDate.getDay();
+                
+                // Check if the value of the property corresponding to this day is 1
+                return Element[DayStrArray[CurrentDayInt]] === "1";
+            } )
+
+            // Hope there is only one date
+            if( TheDates.length > 0 )
+            {
+                $scope.ServiceID = TheDates[0].service_id;
+            }
+        }
+        
     } );
 
     // Read agency JSON
@@ -250,4 +333,10 @@ app.controller( "STLFavsController", function( $scope, $http )
 
         }
     }
+
+    // Watches
+    $scope.$watch( "ServiceID", function()
+    {
+        console.log( "Service ID is : " + $scope.ServiceID );
+    } )
 } );
