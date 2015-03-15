@@ -54,6 +54,15 @@
 		</table>
 	</div>
 
+    <div data-ng-show="ShowStopInfo && ShowRouteInfo && ShowAgencyInfo">
+        <h2>Selected stop schedule</h2>
+        <table>
+            <tr>
+                <td data-ng-repeat="StopTime in CurrentStopTimes">{{StopTime.departure_time}}</td>
+            </tr>
+        </table>
+    </div>
+
 
 	<script src="src/App.js"></script>
 	<script src="src/Controller.js"></script>

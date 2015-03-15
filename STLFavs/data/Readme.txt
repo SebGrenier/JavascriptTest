@@ -1,0 +1,1 @@
+Extract the file GTF_STL.zip here and execute the python script STLFavs/Python/GTFS2JSON.py on each file.

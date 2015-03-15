@@ -23,6 +23,7 @@ function FilterJSONArray( CriteriaFn )
     };
 }
 
+// Find an element of the array having a property set to a specific value
 function FindPropertyInArray( TheArray, PropertyName, PropertyValue )
 {
     for( var i = 0; i < TheArray.length; ++i )
@@ -79,6 +80,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
     $scope.ShowStopInfo = false;
     $scope.ServiceID = "";
     $scope.ServicePrefix = "";
+    $scope.CurrentStopTimes = [];
 
     // Load both calendar JSONs
     GetCalendar = $http.get( "data/calendar.json", { cache: false } );
@@ -286,14 +288,15 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
         if( $scope.CurrentRoute != null ||
 			$scope.CurrentRoute != undefined )
         {
-            $scope.ShowRouteInfo = true;
-
-            // Use the route ID to get all the trips of this route
+            // Use the route ID and the service ID 
+            // to get all the trips of this route
             var FilterTrips = FilterJSONArray( function( Element )
             {
-                if( Element.hasOwnProperty( "route_id" ) )
+                if( Element.hasOwnProperty( "route_id" ) &&
+                    Element.hasOwnProperty( "service_id" ) )
                 {
-                    return Element.route_id === $scope.CurrentRoute.route_id;
+                    return Element.route_id === $scope.CurrentRoute.route_id &&
+                        Element.service_id === $scope.ServiceID;
                 }
                 return false;
             } );
@@ -302,7 +305,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
 
             if( $scope.CurrentTrips.length <= 0 )
             {
-                console.log( "No trips for route " + $scope.CurrentRoute.route_short_name + " " + $scope.CurrentRoute.route_long_name );
+                console.log( "No trips for route " + $scope.CurrentRoute.route_complete_name );
                 return;
             }
 
@@ -336,6 +339,9 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
                     $scope.CurrentStops.push( TheStop );
                 }
             } )
+
+            // Set ShowRouteInfo at the end
+            $scope.ShowRouteInfo = true;
         }
         else
         {
@@ -352,20 +358,53 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
         {
             // Find the schedule for this stop, 
             // taking into account the day of the week
+            var RouteID = $scope.CurrentRoute.route_id;
+            var ServiceID = $scope.ServiceID;
             var StopID = $scope.CurrentStop.stop_id;
 
-            // Get the stop times for current stop
-            var FilterStopTimes = FilterJSONArray( function( Element )
+            // With the current trips, get the trip_ids
+            var TripIDs = $scope.CurrentTrips.map( function( Item )
             {
-                if( Element.hasOwnProperty( "stop_id" ) )
-                {
-                    return Element.stop_id === StopID;
-                }
-                return false;
+                return Item.trip_id;
             } );
-            var CurrentStopTimes = $scope.StopTimes.filter( FilterStopTimes );
 
+            // For each trip_id, find the stop time that correspond
+            // to this trip_id and stop_id
+            $scope.CurrentStopTimes = [];
+            TripIDs.forEach( function( Item )
+            {
+                var FilterStopTimes = FilterJSONArray( function( Element )
+                {
+                    if( Element.hasOwnProperty( "trip_id" ) &&
+                        Element.hasOwnProperty( "stop_id" ) )
+                    {
+                        return Element.trip_id === Item &&
+                            Element.stop_id === StopID;
+                    }
+                    return false;
+                } );
+                var TempStopTimes = $scope.StopTimes.filter( FilterStopTimes );
 
+                // There should be only one stop in this array
+                if( TempStopTimes.length > 0 )
+                {
+                    $scope.CurrentStopTimes.push( TempStopTimes[0] );
+                }
+            } );
+
+            // Sort by departure time
+            $scope.CurrentStopTimes.sort( function( ItemA, ItemB )
+            {
+                if( ItemA.hasOwnProperty( "departure_time" ) && 
+                    ItemB.hasOwnProperty( "departure_time" ) )
+                {
+                    if( ItemA.departure_time < ItemB.departure_time )
+                        return -1;
+                    if( ItemA.departure_time > ItemB.departure_time )
+                        return 1;
+                    return 0;
+                }
+            } );
         }
     }
 
