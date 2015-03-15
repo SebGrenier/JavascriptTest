@@ -55,7 +55,7 @@ function FormatDate( TheDate )
 
         return YearStr + MonthStr + DayStr;
     }
-    
+
     return "";
 }
 
@@ -144,7 +144,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
             {
                 // Lets assume that the element is indeed a date from the calendar
                 var CurrentDayInt = CurrentDate.getDay();
-                
+
                 // Check if the value of the property corresponding to this day is 1
                 return Element[DayStrArray[CurrentDayInt]] === "1";
             } )
@@ -155,7 +155,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
                 $scope.ServiceID = TheDates[0].service_id;
             }
         }
-        
+
     } );
 
     // Read agency JSON
@@ -174,7 +174,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
 	    $scope.AllRoutes = Temp.map( function( Item )
 	    {
 	        return new Route( Item );
-	    });
+	    } );
 	    console.log( "routes.json loaded" );
 	} );
 
@@ -395,7 +395,7 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
             // Sort by departure time
             $scope.CurrentStopTimes.sort( function( ItemA, ItemB )
             {
-                if( ItemA.hasOwnProperty( "departure_time" ) && 
+                if( ItemA.hasOwnProperty( "departure_time" ) &&
                     ItemB.hasOwnProperty( "departure_time" ) )
                 {
                     if( ItemA.departure_time < ItemB.departure_time )
@@ -422,4 +422,88 @@ app.controller( "STLFavsController", function( $scope, $http, $q )
         }
         console.log( "Service Prefix is : " + $scope.ServicePrefix );
     } )
+} );
+
+// Directive for clock
+app.directive( "stlfavsTimeLeft", function( $interval, dateFilter )
+{
+
+    function link( scope, element, attrs )
+    {
+        var format = "h:mm:ss";
+        var timeoutId;
+        var CurrentStopTimes = [];
+        var TimeRegex = /(\d+):(\d+):(\d+)/i;
+
+        function UpdateTime()
+        {
+            // Keep only the Stop times that are not passed yet
+            var DateNow = new Date();
+            var TmpStops = CurrentStopTimes.filter( function( StopDate )
+            {
+                var TimeLeft = StopDate.getTime() - DateNow.getTime();
+                return TimeLeft >= 0;
+            } );
+
+            if( TmpStops.length > 0 )
+            {
+                var TimeLeft = TmpStops[0].getTime() - DateNow.getTime();
+
+                // Remove ms
+                TimeLeft /= 1000;
+                var Seconds = Math.round( TimeLeft % 60 );
+
+                // Remove seconds
+                TimeLeft = Math.floor( TimeLeft / 60 );
+                var Minutes = Math.round( TimeLeft % 60 );
+
+                // Remove minutes
+                TimeLeft = Math.floor( TimeLeft / 60 );
+                var Hours = Math.round( TimeLeft % 24 );
+
+                element.text( Hours.toString() + ":" + Minutes.toString() + ":" + Seconds.toString() );
+            }
+            
+        }
+
+        scope.$watch( attrs.stlfavsTimeLeft, function( value )
+        {
+            // Convert the stop times to Date objects
+            var Temp = value;
+            var Today = new Date();
+            CurrentStopTimes = Temp.map( function( Item )
+            {
+                var Match = TimeRegex.exec( Item.departure_time );
+                if( Match != null )
+                {
+                    var Hour = Number( Match[1] );
+                    var Minute = Number( Match[2] );
+                    var Second = Number( Match[3] );
+
+                    var NewDate = new Date();
+                    NewDate.setFullYear( Today.getFullYear(), Today.getMonth(), Today.getDate() );
+                    NewDate.setHours( Hour, Minute, Second );
+
+                    return NewDate;
+                }
+                return undefined;
+            } );
+            UpdateTime();
+        } );
+
+        element.on( "$destroy", function()
+        {
+            $interval.cancel( timeoutId );
+        } );
+
+        // start the UI update process; save the timeoutId for canceling
+        timeoutId = $interval( function()
+        {
+            UpdateTime(); // update DOM
+        }, 1000 );
+    }
+
+    return {
+        link: link
+    };
 } );
